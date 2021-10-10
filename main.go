@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
+	"time"
 )
 
 func readCsvFile(filePath string) [][]string {
@@ -34,31 +34,31 @@ func main() {
 
 	// Process records
 	var correct, total int = 0, len(records)
+	timer := time.NewTimer(10 * time.Second)
+
+outerloop:
 	for i := 0; i < len(records); i++ {
 		record := records[i]
-		question := record[0]
+		fmt.Printf("Problem #%d: %s = ", i+1, record[0])
 
-		// Display question for X seconds
-		fmt.Print(question + " = ")
+		answer := make(chan string)
 
-		var user_answer string
-		fmt.Scanln(&user_answer)
+		go func() {
+			var y string
+			fmt.Scanf("%s\n", &y)
+			answer <- y
+		}()
 
-		answer, err := strconv.ParseInt(record[1], 10, 0)
-		if err != nil {
-			log.Fatal("Unable to parse record as integer: ", record[1])
-		}
-
-		user_answer_int, err := strconv.ParseInt(user_answer, 10, 0)
-		if err != nil {
-			fmt.Println("Please input a valid number.")
-			i--
-		}
-		if answer == user_answer_int {
-			correct += 1
+		select {
+		case <-timer.C:
+			fmt.Println("\nTimeout!")
+			break outerloop
+		case x := <-answer:
+			if record[1] == x {
+				correct += 1
+			}
 		}
 	}
 
-	var result string = strconv.Itoa(correct) + "/" + strconv.Itoa(total)
-	fmt.Println("You have answered " + result + " correctly")
+	fmt.Printf("\nYou have answered %d/%d correctly\n", correct, total)
 }
